@@ -209,6 +209,24 @@
             margin: 20px 0;
         }
         
+        .demo-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .success-notice {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -335,43 +353,123 @@
         }
         
         async function fetchClinicalTrials(condition, intervention, status) {
-            // Build query parameters
+            // Build the search expression
+            let searchExpression = condition;
+            
+            // Add intervention to search if specified
+            if (intervention && intervention !== '') {
+                searchExpression += ` AND ${intervention}`;
+            }
+            
+            // Build query parameters for the new API
             let queryParams = new URLSearchParams({
-                'expr': condition,
-                'min_rnk': '1',
-                'max_rnk': '20',
-                'fmt': 'json'
+                'query.cond': condition,
+                'query.term': searchExpression,
+                'countTotal': 'true',
+                'pageSize': '20',
+                'format': 'json'
             });
             
-            if (intervention) {
-                queryParams.set('intr', intervention);
+            // Add status filter if specified
+            if (status && status !== '') {
+                queryParams.set('query.recr', status);
             }
             
-            if (status) {
-                queryParams.set('recrs', status);
+            // Add intervention filter if specified
+            if (intervention && intervention !== '') {
+                queryParams.set('query.intr', intervention);
             }
             
-            const url = `https://clinicaltrials.gov/api/query/study_fields?${queryParams.toString()}&fields=NCTId,BriefTitle,Condition,InterventionType,Phase,StudyType,OverallStatus,StartDate,CompletionDate,EnrollmentCount,BriefSummary,OfficialTitle`;
+            const url = `https://clinicaltrials.gov/api/v2/studies?${queryParams.toString()}`;
             
             try {
-                // Using a CORS proxy for demo purposes - in production, you'd use your own backend
-                const proxyUrl = 'https://corsproxy.io/?';
-                const response = await fetch(proxyUrl + encodeURIComponent(url));
+                console.log('Fetching from ClinicalTrials.gov:', url);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Try multiple CORS proxy services
+                const proxyServices = [
+                    'https://api.allorigins.win/raw?url=',
+                    'https://corsproxy.io/?',
+                    'https://cors-anywhere.herokuapp.com/'
+                ];
+                
+                let response = null;
+                let lastError = null;
+                
+                // Try each proxy service
+                for (const proxyUrl of proxyServices) {
+                    try {
+                        const fullUrl = proxyUrl + encodeURIComponent(url);
+                        console.log('Trying proxy:', proxyUrl);
+                        
+                        response = await fetch(fullUrl, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            console.log('Successfully connected via:', proxyUrl);
+                            break;
+                        }
+                    } catch (error) {
+                        lastError = error;
+                        console.log('Proxy failed:', proxyUrl, error.message);
+                        continue;
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    throw new Error(`All proxies failed. Last error: ${lastError?.message || 'Unknown error'}`);
                 }
                 
                 const data = await response.json();
+                console.log('API Response:', data);
                 
-                if (data.StudyFieldsResponse && data.StudyFieldsResponse.StudyFields) {
+                if (data.studies && data.studies.length > 0) {
+                    // Convert new API format to our expected format
+                    return data.studies.map(study => ({
+                        NCTId: [study.protocolSection?.identificationModule?.nctId || 'N/A'],
+                        BriefTitle: [study.protocolSection?.identificationModule?.briefTitle || 'No title available'],
+                        OfficialTitle: [study.protocolSection?.identificationModule?.officialTitle || ''],
+                        Condition: study.protocolSection?.conditionsModule?.conditions || [condition],
+                        InterventionType: study.protocolSection?.armsInterventionsModule?.interventions?.map(i => i.type) || ['Not specified'],
+                        Phase: [study.protocolSection?.designModule?.phases?.[0] || 'Not specified'],
+                        StudyType: [study.protocolSection?.designModule?.studyType || 'Not specified'],
+                        OverallStatus: [study.protocolSection?.statusModule?.overallStatus || 'Unknown'],
+                        StartDate: [study.protocolSection?.statusModule?.startDateStruct?.date || 'Not specified'],
+                        CompletionDate: [study.protocolSection?.statusModule?.completionDateStruct?.date || 'Not specified'],
+                        EnrollmentCount: [study.protocolSection?.designModule?.enrollmentInfo?.count?.toString() || 'Not specified'],
+                        BriefSummary: [study.protocolSection?.descriptionModule?.briefSummary || 'Summary not available']
+                    }));
+                } else if (data.StudyFieldsResponse && data.StudyFieldsResponse.StudyFields) {
+                    // Handle old API format if returned
                     return data.StudyFieldsResponse.StudyFields;
                 } else {
+                    console.log('No studies found in API response');
                     return [];
                 }
             } catch (error) {
-                // Fallback: Generate mock data for demo
-                console.log('API call failed, using mock data for demo');
+                console.error('API call failed:', error);
+                console.log('Falling back to mock data for demo purposes');
+                
+                // Show user that we're using demo data
+                const demoNotice = document.createElement('div');
+                demoNotice.className = 'demo-notice';
+                demoNotice.innerHTML = `
+                    <strong>⚠️ Demo Mode:</strong> Unable to connect to ClinicalTrials.gov API directly from browser. 
+                    Showing sample data. In production, this would use a backend server to fetch real data.
+                    <br><small>Error: ${error.message}</small>
+                `;
+                
+                // Add notice to results
+                setTimeout(() => {
+                    const container = document.getElementById('trialsContainer');
+                    if (container) {
+                        container.insertBefore(demoNotice, container.firstChild);
+                    }
+                }, 100);
+                
                 return generateMockTrials(condition, intervention);
             }
         }
