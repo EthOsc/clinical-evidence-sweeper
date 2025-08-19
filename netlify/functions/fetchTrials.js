@@ -30,61 +30,84 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Build ClinicalTrials.gov API URL
-    const baseUrl = 'https://clinicaltrials.gov/api/query/study_fields';
-    const params = new URLSearchParams({
-      'expr': condition,
-      'fields': 'NCTId,BriefTitle,Condition,Phase,StudyType,PrimaryCompletionDate,LocationFacility,LocationCity,LocationState,LocationCountry,OverallStatus,BriefSummary,DetailedDescription,EligibilityCriteria,MinimumAge,MaximumAge,EnrollmentCount',
-      'min_rnk': ((page - 1) * 20) + 1,
-      'max_rnk': page * 20,
-      'fmt': 'json'
-    });
+    // Build ClinicalTrials.gov API v2 URL with correct format
+    const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
+    
+    // Build query parameters according to v2 API spec
+    const queryParams = {
+      'format': 'json',
+      'pageSize': 20
+    };
 
-    // Add additional filters if provided
+    // Add condition search - using the correct parameter name
+    queryParams['query.cond'] = condition;
+
+    // Add location filter if provided
     if (location) {
-      params.append('locn', location);
+      queryParams['query.locn'] = location;
     }
     
+    // Add status filter if provided  
     if (status) {
-      params.append('recrs', status);
+      queryParams['filter.overallStatus'] = status;
     }
 
+    // Add pagination (note: v2 API uses different pagination)
+    if (page > 1) {
+      queryParams['pageToken'] = ((page - 1) * 20).toString();
+    }
+
+    const params = new URLSearchParams(queryParams);
     const apiUrl = `${baseUrl}?${params}`;
     console.log('Fetching from:', apiUrl);
 
-    // Fetch data from ClinicalTrials.gov
+    // Fetch data from ClinicalTrials.gov v2 API
     const response = await fetch(apiUrl, {
       headers: {
-        'User-Agent': 'Clinical-Trials-Sweeper/1.0'
+        'User-Agent': 'Clinical-Trials-Sweeper/1.0',
+        'Accept': 'application/json'
       }
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
       throw new Error(`ClinicalTrials.gov API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('API Response structure:', Object.keys(data));
     
-    // Process and clean the data
-    const processedTrials = data.StudyFieldsResponse?.StudyFields?.map(study => {
+    // Process and clean the data for v2 API format
+    const studies = data.studies || [];
+    const processedTrials = studies.map(study => {
+      const protocolSection = study.protocolSection || {};
+      const identificationModule = protocolSection.identificationModule || {};
+      const statusModule = protocolSection.statusModule || {};
+      const designModule = protocolSection.designModule || {};
+      const conditionsModule = protocolSection.conditionsModule || {};
+      const descriptionModule = protocolSection.descriptionModule || {};
+      const eligibilityModule = protocolSection.eligibilityModule || {};
+      const contactsLocationsModule = protocolSection.contactsLocationsModule || {};
+      
       return {
-        nctId: study.NCTId?.[0] || 'N/A',
-        title: study.BriefTitle?.[0] || 'N/A',
-        condition: study.Condition?.join(', ') || condition,
-        phase: study.Phase?.[0] || 'N/A',
-        studyType: study.StudyType?.[0] || 'N/A',
-        status: study.OverallStatus?.[0] || 'N/A',
-        completionDate: study.PrimaryCompletionDate?.[0] || 'N/A',
-        location: formatLocation(study),
-        briefSummary: study.BriefSummary?.[0] || 'N/A',
-        detailedDescription: study.DetailedDescription?.[0] || 'N/A',
-        eligibility: study.EligibilityCriteria?.[0] || 'N/A',
-        minAge: study.MinimumAge?.[0] || 'N/A',
-        maxAge: study.MaximumAge?.[0] || 'N/A',
-        enrollment: study.EnrollmentCount?.[0] || 'N/A',
-        url: `https://clinicaltrials.gov/ct2/show/${study.NCTId?.[0]}`
+        nctId: identificationModule.nctId || 'N/A',
+        title: identificationModule.briefTitle || 'N/A',
+        condition: conditionsModule.conditions?.join(', ') || condition,
+        phase: designModule.phases?.join(', ') || 'N/A',
+        studyType: designModule.studyType || 'N/A',
+        status: statusModule.overallStatus || 'N/A',
+        completionDate: statusModule.primaryCompletionDateStruct?.date || statusModule.completionDateStruct?.date || 'N/A',
+        location: formatLocationV2(contactsLocationsModule),
+        briefSummary: descriptionModule.briefSummary || 'N/A',
+        detailedDescription: descriptionModule.detailedDescription || 'N/A',
+        eligibility: eligibilityModule.eligibilityCriteria || 'N/A',
+        minAge: eligibilityModule.minimumAge || 'N/A',
+        maxAge: eligibilityModule.maximumAge || 'N/A',
+        enrollment: designModule.enrollmentInfo?.count || statusModule.enrollmentInfo?.count || 'N/A',
+        url: `https://clinicaltrials.gov/study/${identificationModule.nctId || 'unknown'}`
       };
-    }) || [];
+    });
 
     // Filter by age if specified
     const filteredTrials = filterByAge(processedTrials, minAge, maxAge);
@@ -94,48 +117,50 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         trials: filteredTrials,
-        totalResults: data.StudyFieldsResponse?.NStudiesReturned || 0,
-        totalAvailable: data.StudyFieldsResponse?.NStudiesAvail || 0,
+        totalResults: studies.length,
+        totalAvailable: data.totalCount || studies.length,
         page: parseInt(page),
-        searchParams: { condition, location, status, minAge, maxAge }
+        searchParams: { condition, location, status, minAge, maxAge },
+        apiResponse: data.studies ? 'v2 API working' : 'unexpected format'
       })
     };
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error details:', error);
     
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: 'Failed to fetch clinical trials data',
-        details: error.message 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       })
     };
   }
 };
 
-// Helper function to format location data
-function formatLocation(study) {
-  const facilities = study.LocationFacility || [];
-  const cities = study.LocationCity || [];
-  const states = study.LocationState || [];
-  const countries = study.LocationCountry || [];
+// Helper function to format location data for v2 API
+function formatLocationV2(contactsLocationsModule) {
+  const locations = contactsLocationsModule?.locations;
   
-  if (facilities.length === 0) return 'Location not specified';
+  if (!locations || locations.length === 0) {
+    return 'Location not specified';
+  }
   
-  // Take the first location for simplicity
-  const facility = facilities[0];
-  const city = cities[0] || '';
-  const state = states[0] || '';
-  const country = countries[0] || '';
+  // Take the first location
+  const location = locations[0];
+  const facility = location.facility || '';
+  const city = location.city || '';
+  const state = location.state || '';
+  const country = location.country || '';
   
-  let location = facility;
-  if (city) location += `, ${city}`;
-  if (state) location += `, ${state}`;
-  if (country && country !== 'United States') location += `, ${country}`;
+  let locationStr = facility;
+  if (city) locationStr += `, ${city}`;
+  if (state) locationStr += `, ${state}`;
+  if (country && country !== 'United States') locationStr += `, ${country}`;
   
-  return location;
+  return locationStr || 'Location not specified';
 }
 
 // Helper function to filter trials by age
@@ -146,8 +171,8 @@ function filterByAge(trials, minAge, maxAge) {
     const trialMinAge = parseAge(trial.minAge);
     const trialMaxAge = parseAge(trial.maxAge);
     
-    if (minAge && trialMaxAge < parseInt(minAge)) return false;
-    if (maxAge && trialMinAge > parseInt(maxAge)) return false;
+    if (minAge && trialMaxAge !== null && trialMaxAge < parseInt(minAge)) return false;
+    if (maxAge && trialMinAge !== null && trialMinAge > parseInt(maxAge)) return false;
     
     return true;
   });
