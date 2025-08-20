@@ -1,1480 +1,186 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Evidence Sweeper | Real-Time Clinical Trial Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --dark-gradient: linear-gradient(135deg, #232526 0%, #414345 100%);
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.37);
-            --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.4);
-            --border-radius: 20px;
-            --text-primary: #2d3748;
-            --text-secondary: #718096;
-            --text-muted: #a0aec0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--primary-gradient);
-            min-height: 100vh;
-            color: var(--text-primary);
-            overflow-x: hidden;
-        }
-
-        /* Animated background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%);
-            z-index: -1;
-            animation: backgroundShift 20s ease-in-out infinite;
-        }
-
-        @keyframes backgroundShift {
-            0%, 100% { transform: translateX(0) translateY(0); }
-            50% { transform: translateX(-20px) translateY(-20px); }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 60px;
-            animation: fadeInUp 0.8s ease;
-        }
-
-        .logo-container {
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 15px 30px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .logo-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--success-gradient);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            box-shadow: 0 8px 16px rgba(79, 172, 254, 0.3);
-        }
-
-        .header h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 15px;
-            letter-spacing: -2px;
-        }
-
-        .header .subtitle {
-            font-size: 1.3rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 400;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        .header .stats {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 30px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        /* Features Banner */
-        .features-banner {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            margin-bottom: 40px;
-            animation: fadeInUp 0.8s ease 0.1s both;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-        }
-
-        .feature-item {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--primary-gradient);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            margin: 0 auto 15px;
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-        }
-
-        .feature-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .feature-desc {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* Search Section */
-        .search-section {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius);
-            padding: 50px;
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
-            animation: fadeInUp 0.8s ease 0.2s both;
-        }
-
-        .search-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--primary-gradient);
-        }
-
-        .search-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .search-header h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-        }
-
-        .search-header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-
-        .form-group {
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 18px;
-            z-index: 2;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 18px 18px 18px 55px;
-            border: 2px solid rgba(226, 232, 240, 0.8);
-            border-radius: 15px;
-            font-size: 16px;
-            font-family: inherit;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
-            background: white;
-        }
-
-        .advanced-filters {
-            margin-top: 25px;
-            padding: 25px;
-            background: rgba(248, 250, 252, 0.5);
-            border-radius: 15px;
-            border: 1px dashed rgba(102, 126, 234, 0.3);
-            display: none;
-        }
-
-        .advanced-toggle {
-            background: none;
-            border: none;
-            color: #667eea;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 auto 20px;
-            padding: 10px;
-            border-radius: 8px;
-            transition: background 0.3s ease;
-        }
-
-        .advanced-toggle:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .search-btn {
-            background: var(--primary-gradient);
-            color: white;
-            border: none;
-            padding: 20px 50px;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .search-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .search-btn:hover::before {
-            left: 100%;
-        }
-
-        .search-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
-        }
-
-        .search-btn:active {
-            transform: translateY(-1px);
-        }
-
-        .search-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Loading Section */
-        .loading {
-            text-align: center;
-            padding: 60px 40px;
-            color: white;
-            font-size: 18px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 40px;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(102, 126, 234, 0.2);
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .loading-progress {
-            margin-top: 20px;
-            display: none;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-gradient);
-            width: 0%;
-            animation: progressFill 3s ease-in-out;
-        }
-
-        @keyframes progressFill {
-            0% { width: 0%; }
-            25% { width: 30%; }
-            50% { width: 60%; }
-            75% { width: 85%; }
-            100% { width: 100%; }
-        }
-
-        /* Results Section */
-        .results-section {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius);
-            padding: 50px;
-            box-shadow: var(--shadow-soft);
-            display: none;
-            animation: fadeInUp 0.8s ease;
-        }
-
-        .results-header {
-            margin-bottom: 40px;
-            padding-bottom: 30px;
-            border-bottom: 2px solid rgba(226, 232, 240, 0.5);
-            text-align: center;
-        }
-
-        .results-header h2 {
-            color: var(--text-primary);
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .results-count {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .results-count::before {
-            content: '📊';
-            font-size: 1.2rem;
-        }
-
-        .results-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .sort-controls select {
-            padding: 10px 15px;
-            border: 2px solid rgba(226, 232, 240, 0.8);
-            border-radius: 8px;
-            background: white;
-            font-size: 14px;
-        }
-
-        .view-toggle {
-            display: flex;
-            gap: 5px;
-        }
-
-        .view-btn {
-            padding: 8px 12px;
-            border: 2px solid rgba(102, 126, 234, 0.3);
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .view-btn.active {
-            background: var(--primary-gradient);
-            color: white;
-            border-color: transparent;
-        }
-
-        /* Trial Cards */
-        .trial-card {
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 20px;
-            padding: 35px;
-            margin-bottom: 25px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .trial-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--primary-gradient);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .trial-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-            border-color: rgba(102, 126, 234, 0.3);
-        }
-
-        .trial-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .trial-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 25px;
-            gap: 20px;
-        }
-
-        .trial-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1.4;
-            flex: 1;
-        }
-
-        .trial-id {
-            background: var(--success-gradient);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
-        }
-
-        .trial-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .meta-item {
-            background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%);
-            padding: 18px 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(226, 232, 240, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .meta-item:hover {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
-            transform: translateY(-2px);
-        }
-
-        .meta-label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .meta-value {
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        .trial-summary {
-            margin-top: 25px;
-            padding: 25px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            border-radius: 15px;
-            border-left: 4px solid #667eea;
-            position: relative;
-        }
-
-        .trial-summary::before {
-            content: '💡';
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            font-size: 1.2rem;
-        }
-
-        .summary-label {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .summary-text {
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-
-        .trial-actions {
-            margin-top: 20px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 8px 16px;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .action-btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Status Messages */
-        .status-message {
-            padding: 20px;
-            border-radius: 15px;
-            margin: 25px 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-weight: 500;
-        }
-
-        .error-message {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-            color: white;
-            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
-        }
-
-        .success-notice {
-            background: var(--success-gradient);
-            color: white;
-            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
-        }
-
-        /* Export Section */
-        .export-section {
-            margin-top: 40px;
-            text-align: center;
-            padding-top: 30px;
-            border-top: 2px solid rgba(226, 232, 240, 0.5);
-        }
-
-        .export-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .export-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .export-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(40, 167, 69, 0.4);
-        }
-
-        /* Debug Section */
-        .debug-section {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-top: 30px;
-            font-family: monospace;
-            font-size: 14px;
-            display: none;
-        }
-
-        .debug-toggle {
-            background: none;
-            border: none;
-            color: #667eea;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: block;
-            margin: 20px auto 0;
-            text-decoration: underline;
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 2.5rem;
-            }
-
-            .header .stats {
-                gap: 20px;
-            }
-
-            .search-section,
-            .results-section {
-                padding: 30px 25px;
-            }
-
-            .search-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .trial-header {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .trial-meta {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .export-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .export-btn {
-                width: 100%;
-                max-width: 250px;
-            }
-
-            .results-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-container">
-                <div class="logo-icon">
-                    <i class="fas fa-microscope"></i>
-                </div>
-                <div>
-                    <h1>Clinical Evidence Sweeper</h1>
-                </div>
-            </div>
-            <p class="subtitle">Real-time clinical trial intelligence powered by ClinicalTrials.gov database</p>
-            <div class="stats">
-                <div class="stat-item">
-                    <span class="stat-number">470K+</span>
-                    <span class="stat-label">Clinical Trials</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">Live</span>
-                    <span class="stat-label">Real-Time Data</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">API</span>
-                    <span class="stat-label">Powered</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="features-banner">
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-database"></i>
-                    </div>
-                    <div class="feature-title">Real-Time Data</div>
-                    <div class="feature-desc">Direct connection to ClinicalTrials.gov API</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-server"></i>
-                    </div>
-                    <div class="feature-title">Backend Processing</div>
-                    <div class="feature-desc">Netlify Functions handle API requests</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-filter"></i>
-                    </div>
-                    <div class="feature-title">Advanced Filtering</div>
-                    <div class="feature-desc">Filter by status, location, and age</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <i class="fas fa-download"></i>
-                    </div>
-                    <div class="feature-title">Export Ready</div>
-                    <div class="feature-desc">Professional reports for research</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="search-section">
-            <div class="search-header">
-                <h2>Search Clinical Trials Database</h2>
-                <p>Search 470,000+ clinical trials from ClinicalTrials.gov in real-time</p>
-            </div>
-            
-            <form id="searchForm">
-                <div class="search-grid">
-                    <div class="form-group">
-                        <label for="condition">
-                            <i class="fas fa-stethoscope"></i> Disease/Condition
-                        </label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-search input-icon"></i>
-                            <input type="text" id="condition" placeholder="e.g., cancer, diabetes, parkinson" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="location">
-                            <i class="fas fa-map-marker-alt"></i> Location
-                        </label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-globe input-icon"></i>
-                            <input type="text" id="location" placeholder="e.g., United States, New York">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="status">
-                            <i class="fas fa-chart-line"></i> Trial Status
-                        </label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-tasks input-icon"></i>
-                            <select id="status">
-                                <option value="">All Statuses</option>
-                                <option value="RECRUITING">🟢 Currently Recruiting</option>
-                                <option value="ACTIVE_NOT_RECRUITING">🟡 Active (Not Recruiting)</option>
-                                <option value="COMPLETED">✅ Completed</option>
-                                <option value="NOT_YET_RECRUITING">🔄 Not Yet Recruiting</option>
-                                <option value="SUSPENDED">⏸️ Suspended</option>
-                                <option value="TERMINATED">🛑 Terminated</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
-                    <i class="fas fa-cog"></i> Advanced Filters
-                    <i class="fas fa-chevron-down" id="advancedChevron"></i>
-                </button>
-
-                <div class="advanced-filters" id="advancedFilters">
-                    <div class="search-grid">
-                        <div class="form-group">
-                            <label for="minAge">
-                                <i class="fas fa-user-clock"></i> Minimum Age
-                            </label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-calendar input-icon"></i>
-                                <input type="number" id="minAge" placeholder="e.g., 18" min="0" max="120">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="maxAge">
-                                <i class="fas fa-user-check"></i> Maximum Age
-                            </label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-calendar-check input-icon"></i>
-                                <input type="number" id="maxAge" placeholder="e.g., 65" min="0" max="120">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="search-btn" id="searchBtn">
-                    <i class="fas fa-rocket"></i> Search Real Clinical Trials
-                </button>
-            </form>
-        </div>
-        
-        <div id="loadingSection" class="loading" style="display: none;">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">
-                <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">
-                    🔍 Connecting to ClinicalTrials.gov...
-                </div>
-                <div style="font-size: 1rem;" id="loadingStatus">
-                    Fetching real-time clinical trial data via Netlify Functions
-                </div>
-            </div>
-            <div class="loading-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="resultsSection" class="results-section">
-            <div class="results-header">
-                <h2 id="resultsTitle">Clinical Trial Results</h2>
-                <div id="resultsCount" class="results-count"></div>
-            </div>
-
-            <div class="results-controls">
-                <div class="sort-controls">
-                    <label for="sortBy">Sort by:</label>
-                    <select id="sortBy" onchange="sortResults()">
-                        <option value="relevance">Relevance</option>
-                        <option value="date">Completion Date</option>
-                        <option value="enrollment">Enrollment Size</option>
-                        <option value="status">Status</option>
-                    </select>
-                </div>
-                <div class="view-toggle">
-                    <button class="view-btn active" onclick="setView('cards')" id="cardView">
-                        <i class="fas fa-th-large"></i> Cards
-                    </button>
-                    <button class="view-btn" onclick="setView('list')" id="listView">
-                        <i class="fas fa-list"></i> List
-                    </button>
-                </div>
-            </div>
-            
-            <div id="trialsContainer"></div>
-            
-            <div class="export-section">
-                <h3 style="margin-bottom: 20px; color: var(--text-primary);">Export Your Research</h3>
-                <div class="export-buttons">
-                    <button class="export-btn" onclick="exportToPDF()">
-                        <i class="fas fa-file-pdf"></i> Export to PDF
-                    </button>
-                    <button class="export-btn" onclick="exportToCSV()">
-                        <i class="fas fa-file-csv"></i> Export to CSV
-                    </button>
-                    <button class="export-btn" onclick="saveSearch()">
-                        <i class="fas fa-bookmark"></i> Save Search
-                    </button>
-                </div>
-            </div>
-
-            <button class="debug-toggle" onclick="toggleDebug()">Show Debug Information</button>
-            <div id="debugSection" class="debug-section"></div>
-        </div>
-    </div>
-
-    <script>
-        let currentResults = [];
-        let currentView = 'cards';
-        
-        document.getElementById('searchForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            await searchTrials();
-        });
-        
-        function toggleAdvanced() {
-            const filters = document.getElementById('advancedFilters');
-            const chevron = document.getElementById('advancedChevron');
-            
-            if (filters.style.display === 'none' || !filters.style.display) {
-                filters.style.display = 'block';
-                chevron.style.transform = 'rotate(180deg)';
-            } else {
-                filters.style.display = 'none';
-                chevron.style.transform = 'rotate(0deg)';
-            }
-        }
-
-        function toggleDebug() {
-            const debugSection = document.getElementById('debugSection');
-            debugSection.style.display = debugSection.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        async function searchTrials() {
-            const condition = document.getElementById('condition').value.trim();
-            const location = document.getElementById('location').value.trim();
-            const status = document.getElementById('status').value;
-            const minAge = document.getElementById('minAge').value;
-            const maxAge = document.getElementById('maxAge').value;
-            
-            if (!condition) {
-                showNotification('Please enter a condition or disease to search', 'error');
-                return;
-            }
-            
-            // Show loading with real progress
-            showLoadingWithProgress();
-            
-            try {
-                // Try to call your Netlify function
-                const trials = await fetchTrialsViaNetlify(condition, location, status, minAge, maxAge);
-                
-                if (trials && trials.length > 0) {
-                    await displayResults(trials, condition);
-                    showNotification(`Successfully loaded ${trials.length} real clinical trials from ClinicalTrials.gov`, 'success');
-                } else {
-                    // If no results or error, use demo data
-                    useDemoData(condition, location, status, minAge, maxAge);
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-                // If there's an error, use demo data
-                useDemoData(condition, location, status, minAge, maxAge);
-            } finally {
-                hideLoading();
-            }
-        }
-        
-        function showLoadingWithProgress() {
-            document.getElementById('loadingSection').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
-            document.getElementById('searchBtn').disabled = true;
-            
-            // Simulate realistic loading steps
-            const statusElement = document.getElementById('loadingStatus');
-            const steps = [
-                'Connecting to Netlify Functions...',
-                'Authenticating with ClinicalTrials.gov API...',
-                'Querying trial database...',
-                'Processing results...',
-                'Formatting data...'
-            ];
-            
-            let stepIndex = 0;
-            const interval = setInterval(() => {
-                if (stepIndex < steps.length) {
-                    statusElement.textContent = steps[stepIndex];
-                    stepIndex++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 600);
-        }
-        
-        function hideLoading() {
-            document.getElementById('loadingSection').style.display = 'none';
-            document.getElementById('searchBtn').disabled = false;
-        }
-        
-        async function fetchTrialsViaNetlify(condition, location, status, minAge, maxAge) {
-            // Build query parameters for your Netlify function
-            const queryParams = new URLSearchParams();
-            
-            // Required parameter
-            queryParams.set('condition', condition);
-            
-            // Optional parameters
-            if (location) {
-                queryParams.set('location', location);
-            }
-            
-            if (status) {
-                queryParams.set('status', status);
-            }
-            
-            if (minAge) {
-                queryParams.set('minAge', minAge);
-            }
-            
-            if (maxAge) {
-                queryParams.set('maxAge', maxAge);
-            }
-            
-            // Call your Netlify function
-            const functionUrl = `/.netlify/functions/fetchTrials?${queryParams.toString()}`;
-            
-            console.log('Calling Netlify function:', functionUrl);
-            
-            const response = await fetch(functionUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.trials && data.trials.length > 0) {
-                return data.trials;
-            } else {
-                return [];
-            }
-        }
-
-        function useDemoData(condition, location, status, minAge, maxAge) {
-            // Show notification that we're using demo data
-            showNotification('Using demo data while backend is being fixed. Real API results will display when available.', 'info');
-            
-            // Generate demo data based on search parameters
-            const demoData = generateDemoTrials(condition, location, status, minAge, maxAge);
-            
-            // Display the demo results
-            displayResults(demoData, condition);
-            
-            // Add debug info
-            document.getElementById('debugSection').innerHTML = `
-                <strong>Debug Information:</strong><br>
-                <strong>Backend Status:</strong> 502 Error - Netlify function not responding<br>
-                <strong>Search Parameters:</strong> condition=${condition}, location=${location}, status=${status}, minAge=${minAge}, maxAge=${maxAge}<br>
-                <strong>Using demo data:</strong> ${demoData.length} simulated trials<br>
-                <strong>Next Steps:</strong> Check your Netlify function deployment and API configuration
-            `;
-        }
-        
-        function generateDemoTrials(condition, location, status, minAge, maxAge) {
-            // Generate realistic demo data based on search parameters
-            const statuses = status ? [status] : ['RECRUITING', 'ACTIVE_NOT_RECRUITING', 'COMPLETED', 'NOT_YET_RECRUITING'];
-            const locations = location ? [location] : ['United States', 'Canada', 'United Kingdom', 'Germany', 'France', 'Australia'];
-            const phases = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4'];
-            
-            const trialCount = Math.floor(Math.random() * 5) + 8; // 8-12 trials
-            
-            const trials = [];
-            for (let i = 0; i < trialCount; i++) {
-                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-                const randomLocation = locations[Math.floor(Math.random() * locations.length)];
-                const randomPhase = phases[Math.floor(Math.random() * phases.length)];
-                
-                trials.push({
-                    nctId: `NCT${(10000000 + Math.floor(Math.random() * 90000000))}`,
-                    title: `Study of ${condition.charAt(0).toUpperCase() + condition.slice(1)} Treatment ${i+1}`,
-                    condition: condition,
-                    phase: randomPhase,
-                    studyType: Math.random() > 0.5 ? 'Interventional' : 'Observational',
-                    status: randomStatus,
-                    completionDate: `202${Math.floor(Math.random() * 4)}-${(Math.floor(Math.random() * 12) + 1).toString().padStart(2, '0')}-${(Math.floor(Math.random() * 28) + 1).toString().padStart(2, '0')}`,
-                    location: `${randomLocation}${Math.random() > 0.7 ? ', ' + ['New York', 'California', 'Texas', 'London', 'Berlin'][Math.floor(Math.random() * 5)] : ''}`,
-                    briefSummary: `This study aims to evaluate the efficacy and safety of a new treatment for ${condition}. Participants will be randomly assigned to receive either the investigational treatment or a placebo. The primary outcome measure is the change in symptom severity from baseline to week 12.`,
-                    detailedDescription: `This is a ${randomPhase.toLowerCase()} trial investigating a novel therapeutic approach for ${condition}. The study duration is approximately 12 months, with a 6-month follow-up period. Participants must meet specific inclusion and exclusion criteria.`,
-                    eligibility: 'Inclusion Criteria:\n- Diagnosis of ' + condition + '\n- Age between ' + (minAge || 18) + ' and ' + (maxAge || 75) + ' years\n- Willing to provide informed consent\n\nExclusion Criteria:\n- Previous treatment with similar therapy\n- Significant comorbidities\n- Pregnancy or breastfeeding',
-                    minAge: minAge ? `${minAge} Years` : '18 Years',
-                    maxAge: maxAge ? `${maxAge} Years` : '75 Years',
-                    enrollment: Math.floor(Math.random() * 500) + 50,
-                    url: '#'
-                });
-            }
-            
-            return trials;
-        }
-        
-        async function displayResults(trials, searchTerm) {
-            currentResults = trials;
-            
-            document.getElementById('resultsTitle').textContent = `Clinical Trials: "${searchTerm}"`;
-            document.getElementById('resultsCount').textContent = `${trials.length} studies found${trials[0] && trials[0].nctId.startsWith('NCT') ? ' from ClinicalTrials.gov' : ' (demo data)'}`;
-            
-            renderTrials(trials);
-            
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function renderTrials(trials) {
-            const container = document.getElementById('trialsContainer');
-            container.innerHTML = '';
-            
-            trials.forEach((trial, index) => {
-                const trialCard = createTrialCard(trial, index);
-                container.appendChild(trialCard);
-            });
-        }
-        
-        function createTrialCard(trial, index) {
-            const card = document.createElement('div');
-            card.className = 'trial-card';
-            
-            const nctId = trial.nctId || `Unknown-${index + 1}`;
-            const title = trial.title || 'Clinical Trial';
-            const condition = trial.condition || 'Various';
-            const phase = trial.phase || 'Not specified';
-            const status = trial.status || 'Unknown';
-            const enrollment = trial.enrollment || 'Not specified';
-            const location = trial.location || 'Not specified';
-            const completionDate = trial.completionDate || 'Not specified';
-            const summary = trial.briefSummary || 'Summary not available';
-            
-            // Status color coding
-            const statusColors = {
-                'RECRUITING': '#28a745',
-                'ACTIVE_NOT_RECRUITING': '#ffc107',
-                'COMPLETED': '#17a2b8',
-                'NOT_YET_RECRUITING': '#6f42c1',
-                'SUSPENDED': '#fd7e14',
-                'TERMINATED': '#dc3545'
-            };
-            
-            const statusColor = statusColors[status] || '#6c757d';
-            
-            card.innerHTML = `
-                <div class="trial-header">
-                    <div class="trial-title">${title}</div>
-                    <div class="trial-id" style="background: ${statusColor}">${nctId}</div>
-                </div>
-                <div class="trial-meta">
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-heartbeat"></i> Condition
-                        </div>
-                        <div class="meta-value">${condition}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-flask"></i> Phase
-                        </div>
-                        <div class="meta-value">${phase}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-chart-line"></i> Status
-                        </div>
-                        <div class="meta-value">${status.replace(/_/g, ' ')}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-users"></i> Enrollment
-                        </div>
-                        <div class="meta-value">${enrollment} participants</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-map-marker-alt"></i> Location
-                        </div>
-                        <div class="meta-value">${location}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">
-                            <i class="fas fa-calendar"></i> Completion Date
-                        </div>
-                        <div class="meta-value">${completionDate}</div>
-                    </div>
-                </div>
-                <div class="trial-summary">
-                    <div class="summary-label">Study Summary</div>
-                    <div class="summary-text">${summary}</div>
-                </div>
-                <div class="trial-actions">
-                    <a href="${trial.url || `https://clinicaltrials.gov/study/${nctId}`}" target="_blank" class="action-btn">
-                        <i class="fas fa-external-link-alt"></i> View on ClinicalTrials.gov
-                    </a>
-                    <button class="action-btn" onclick="saveSearch()">
-                        <i class="fas fa-bookmark"></i> Save Search
-                    </button>
-                </div>
-            `;
-            
-            return card;
-        }
-        
-        function sortResults() {
-            const sortBy = document.getElementById('sortBy').value;
-            
-            if (!currentResults.length) return;
-            
-            let sortedResults = [...currentResults];
-            
-            switch (sortBy) {
-                case 'date':
-                    sortedResults.sort((a, b) => {
-                        const dateA = new Date(a.completionDate || '1900-01-01');
-                        const dateB = new Date(b.completionDate || '1900-01-01');
-                        return dateB - dateA;
-                    });
-                    break;
-                case 'enrollment':
-                    sortedResults.sort((a, b) => {
-                        const enrollA = parseInt(a.enrollment || '0');
-                        const enrollB = parseInt(b.enrollment || '0');
-                        return enrollB - enrollA;
-                    });
-                    break;
-                case 'status':
-                    const statusOrder = ['RECRUITING', 'NOT_YET_RECRUITING', 'ACTIVE_NOT_RECRUITING', 'COMPLETED', 'SUSPENDED', 'TERMINATED'];
-                    sortedResults.sort((a, b) => {
-                        const statusA = statusOrder.indexOf(a.status || '');
-                        const statusB = statusOrder.indexOf(b.status || '');
-                        return statusA - statusB;
-                    });
-                    break;
-                default:
-                    // Keep original relevance order
-                    break;
-            }
-            
-            renderTrials(sortedResults);
-        }
-        
-        function setView(viewType) {
-            currentView = viewType;
-            
-            // Update button states
-            document.getElementById('cardView').classList.toggle('active', viewType === 'cards');
-            document.getElementById('listView').classList.toggle('active', viewType === 'list');
-            
-            // Re-render with new view
-            renderTrials(currentResults);
-        }
-        
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'status-message error-message';
-            errorDiv.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                <div>
-                    <strong>Error:</strong> ${message}
-                </div>
-            `;
-            
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('trialsContainer').innerHTML = '';
-            document.getElementById('trialsContainer').appendChild(errorDiv);
-        }
-        
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `status-message ${type === 'success' ? 'success-notice' : 'error-message'}`;
-            notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-                <div>${message}</div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Remove after 5 seconds
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
-        
-        // Export functions
-        function exportToPDF() {
-            if (currentResults.length === 0) {
-                showNotification('No results to export', 'error');
-                return;
-            }
-            
-            const printContent = document.getElementById('resultsSection').innerHTML;
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Clinical Evidence Report</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .trial-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; page-break-inside: avoid; }
-                            .trial-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; }
-                            .meta-item { margin: 5px 0; }
-                            .export-section, .results-controls, .trial-actions { display: none; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Clinical Evidence Report</h1>
-                        <p>Generated on ${new Date().toLocaleDateString()}</p>
-                        ${printContent}
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        }
-        
-        function exportToCSV() {
-            if (currentResults.length === 0) {
-                showNotification('No results to export', 'error');
-                return;
-            }
-            
-            const csvRows = [];
-            csvRows.push(['Trial ID', 'Title', 'Condition', 'Phase', 'Status', 'Enrollment', 'Location', 'Completion Date', 'Summary']);
-            
-            currentResults.forEach(trial => {
-                const row = [
-                    trial.nctId || '',
-                    trial.title || '',
-                    trial.condition || '',
-                    trial.phase || '',
-                    trial.status || '',
-                    trial.enrollment || '',
-                    trial.location || '',
-                    trial.completionDate || '',
-                    (trial.briefSummary || '').replace(/,/g, ';')
-                ];
-                csvRows.push(row);
-            });
-            
-            const csvContent = csvRows.map(row => row.map(field => `"${field}"`).join(',')).join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `clinical_trials_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-        
-        function saveSearch() {
-            const searchData = {
-                condition: document.getElementById('condition').value,
-                timestamp: new Date().toISOString(),
-                resultCount: currentResults.length
-            };
-            
-            localStorage.setItem('lastSearch', JSON.stringify(searchData));
-            showNotification('Search saved successfully!', 'success');
-        }
-    </script>
-</body>
-</html>
+const fetch = require('node-fetch');
+
+exports.handler = async (event, context) => {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
+  try {
+    // Get query parameters
+    const { condition, location, status, minAge, maxAge, page = 1 } = event.queryStringParameters || {};
+    
+    if (!condition) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Condition parameter is required' })
+      };
+    }
+
+    // Build ClinicalTrials.gov API v2 URL with correct format
+    const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
+    
+    // Build query parameters according to v2 API spec
+    const queryParams = {
+      'format': 'json',
+      'pageSize': 20
+    };
+
+    // Add condition search - using the correct parameter name
+    queryParams['query.cond'] = condition;
+
+    // Add location filter if provided
+    if (location) {
+      queryParams['query.locn'] = location;
+    }
+    
+    // Add status filter if provided  
+    if (status) {
+      queryParams['filter.overallStatus'] = status;
+    }
+
+    // Add pagination (note: v2 API uses different pagination)
+    if (page > 1) {
+      queryParams['pageToken'] = ((page - 1) * 20).toString();
+    }
+
+    const params = new URLSearchParams(queryParams);
+    const apiUrl = `${baseUrl}?${params}`;
+    console.log('Fetching from:', apiUrl);
+
+    // Fetch data from ClinicalTrials.gov v2 API
+    const response = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Clinical-Trials-Sweeper/1.0',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`ClinicalTrials.gov API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('API Response structure:', Object.keys(data));
+    
+    // Process and clean the data for v2 API format
+    const studies = data.studies || [];
+    const processedTrials = studies.map(study => {
+      const protocolSection = study.protocolSection || {};
+      const identificationModule = protocolSection.identificationModule || {};
+      const statusModule = protocolSection.statusModule || {};
+      const designModule = protocolSection.designModule || {};
+      const conditionsModule = protocolSection.conditionsModule || {};
+      const descriptionModule = protocolSection.descriptionModule || {};
+      const eligibilityModule = protocolSection.eligibilityModule || {};
+      const contactsLocationsModule = protocolSection.contactsLocationsModule || {};
+      
+      return {
+        nctId: identificationModule.nctId || 'N/A',
+        title: identificationModule.briefTitle || 'N/A',
+        condition: conditionsModule.conditions?.join(', ') || condition,
+        phase: designModule.phases?.join(', ') || 'N/A',
+        studyType: designModule.studyType || 'N/A',
+        status: statusModule.overallStatus || 'N/A',
+        completionDate: statusModule.primaryCompletionDateStruct?.date || statusModule.completionDateStruct?.date || 'N/A',
+        location: formatLocationV2(contactsLocationsModule),
+        briefSummary: descriptionModule.briefSummary || 'N/A',
+        detailedDescription: descriptionModule.detailedDescription || 'N/A',
+        eligibility: eligibilityModule.eligibilityCriteria || 'N/A',
+        minAge: eligibilityModule.minimumAge || 'N/A',
+        maxAge: eligibilityModule.maximumAge || 'N/A',
+        enrollment: designModule.enrollmentInfo?.count || statusModule.enrollmentInfo?.count || 'N/A',
+        url: `https://clinicaltrials.gov/study/${identificationModule.nctId || 'unknown'}`
+      };
+    });
+
+    // Filter by age if specified
+    const filteredTrials = filterByAge(processedTrials, minAge, maxAge);
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        trials: filteredTrials,
+        totalResults: studies.length,
+        totalAvailable: data.totalCount || studies.length,
+        page: parseInt(page),
+        searchParams: { condition, location, status, minAge, maxAge },
+        apiResponse: data.studies ? 'v2 API working' : 'unexpected format'
+      })
+    };
+
+  } catch (error) {
+    console.error('Error details:', error);
+    
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Failed to fetch clinical trials data',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      })
+    };
+  }
+};
+
+// Helper function to format location data for v2 API
+function formatLocationV2(contactsLocationsModule) {
+  const locations = contactsLocationsModule?.locations;
+  
+  if (!locations || locations.length === 0) {
+    return 'Location not specified';
+  }
+  
+  // Take the first location
+  const location = locations[0];
+  const facility = location.facility || '';
+  const city = location.city || '';
+  const state = location.state || '';
+  const country = location.country || '';
+  
+  let locationStr = facility;
+  if (city) locationStr += `, ${city}`;
+  if (state) locationStr += `, ${state}`;
+  if (country && country !== 'United States') locationStr += `, ${country}`;
+  
+  return locationStr || 'Location not specified';
+}
+
+// Helper function to filter trials by age
+function filterByAge(trials, minAge, maxAge) {
+  if (!minAge && !maxAge) return trials;
+  
+  return trials.filter(trial => {
+    const trialMinAge = parseAge(trial.minAge);
+    const trialMaxAge = parseAge(trial.maxAge);
+    
+    if (minAge && trialMaxAge !== null && trialMaxAge < parseInt(minAge)) return false;
+    if (maxAge && trialMinAge !== null && trialMinAge > parseInt(maxAge)) return false;
+    
+    return true;
+  });
+}
+
+// Helper function to parse age strings
+function parseAge(ageString) {
+  if (!ageString || ageString === 'N/A') return null;
+  const match = ageString.match(/(\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
