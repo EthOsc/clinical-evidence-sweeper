@@ -634,7 +634,7 @@
                 }
                 
                 // Call the actual Netlify function
-                const functionUrl = `/.netlify/functions/fetchTrials?${queryParams.toString()}`;
+                const functionUrl = `/netlify/functions/fetchTrials?${queryParams.toString()}`;
                 console.log('Calling Netlify function:', functionUrl);
                 
                 const response = await fetch(functionUrl, {
